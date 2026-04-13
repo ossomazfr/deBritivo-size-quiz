@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Find My Size — deBritivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1714;
+    --stone: #6b6460;
+    --dust: #c4b8b0;
+    --cream: #f7f3ef;
+    --sand: #e8ddd6;
+    --gold: #b8955a;
+    --gold-light: #d4b07a;
+    --white: #ffffff;
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    overflow: hidden;
+  }
+
+  /* ── Shell ── */
+  #app {
+    width: 100%;
+    max-width: 420px;
+    height: 100vh;
+    max-height: 780px;
+    margin: 0 auto;
+    background: var(--white);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.12);
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--sand);
+    flex-shrink: 0;
+    background: var(--white);
+    z-index: 10;
+  }
+  .header-left, .header-right { width: 72px; }
+  .header-right { display: flex; justify-content: flex-end; }
+  .brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--stone);
+    text-align: center;
+  }
+  .btn-ghost {
+    background: var(--cream);
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--stone);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-ghost:hover { background: var(--sand); color: var(--ink); }
+
+  /* ── Progress bar ── */
+  .progress-bar {
+    height: 2px;
+    background: var(--sand);
+    flex-shrink: 0;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--gold);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── Screen ── */
+  .screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: fadeUp 0.3s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .screen-title-area {
+    padding: 28px 24px 20px;
+    background: var(--cream);
+    flex-shrink: 0;
+  }
+  .screen-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+
+  .screen-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 20px 20px;
+    overflow: hidden;
+  }
+
+  /* ── Primary button ── */
+  .btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: var(--ink);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .btn-primary:hover { background: #2d2926; }
+  .btn-primary:disabled { background: var(--dust); cursor: not-allowed; }
+
+  .screen-footer {
+    padding: 16px 20px 20px;
+    flex-shrink: 0;
+  }
+
+  /* ── Drum Picker ── */
+  .drum-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  .drum-container {
+    position: relative;
+    width: 180px;
+    height: 308px;
+    overflow: hidden;
+  }
+  .drum-fade-top {
+    position: absolute; top: 0; left: 0; right: 0; height: 110px;
+    background: linear-gradient(to bottom, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%);
+    pointer-events: none; z-index: 5;
+  }
+  .drum-fade-bottom {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 110px;
+    background: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%);
+    pointer-events: none; z-index: 5;
+  }
+  .drum-indicator {
+    position: absolute; top: 132px; left: 0; right: 0; height: 44px;
+    border-top: 1.5px solid var(--ink);
+    border-bottom: 1.5px solid var(--ink);
+    pointer-events: none; z-index: 6;
+  }
+  .drum-scroll {
+    height: 308px;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-top: 132px;
+    padding-bottom: 132px;
+  }
+  .drum-scroll::-webkit-scrollbar { display: none; }
+  .drum-item {
+    height: 44px;
+    scroll-snap-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--dust);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .drum-item.active {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .drum-item.near {
+    font-size: 18px;
+    font-weight: 400;
+    color: #aaa9a7;
+  }
+
+  .drum-unit-area {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 44px;
+  }
+  .unit-option {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--dust);
+    cursor: pointer;
+    padding: 2px 0;
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.2s;
+  }
+  .unit-option.active { color: var(--ink); font-weight: 600; }
+
+  /* ── Choice Cards ── */
+  .choice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .choice-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--sand);
+    border-radius: var(--radius);
+    background: var(--white);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    width: 100%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .choice-card:hover { border-color: var(--dust); background: var(--cream); }
+  .choice-card.selected { border-color: var(--gold); background: #fdf8f2; }
+  .choice-icon {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .choice-icon svg { width: 52px; height: 52px; }
+  .choice-label {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .choice-arrow {
+    font-size: 18px;
+    color: var(--dust);
+    font-weight: 300;
+  }
+  .choice-card.selected .choice-arrow { color: var(--gold); }
+
+  /* ── Loading ── */
+  .loading-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+    gap: 28px;
+  }
+  .loading-icon {
+    font-size: 48px;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.8; }
+  }
+  .loading-card {
+    width: 100%;
+    background: var(--cream);
+    border-radius: var(--radius);
+    padding: 24px;
+    text-align: center;
+    border: 1px solid var(--sand);
+  }
+  .loading-text {
+    font-size: 16px;
+    color: var(--stone);
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .loading-text strong { color: var(--ink); }
+  .loading-bar-bg {
+    height: 4px;
+    background: var(--sand);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .loading-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-light));
+    border-radius: 2px;
+    transition: width 0.15s linear;
+  }
+  .loading-powered {
+    font-size: 12px;
+    color: var(--dust);
+    letter-spacing: 0.05em;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+  }
+
+  /* ── Result ── */
+  .result-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+  }
+  .result-top {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+    width: 100%;
+  }
+  .result-product {
+    width: 100%;
+    max-width: 260px;
+    aspect-ratio: 4/3;
+    background: var(--cream);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 52px;
+    border: 1px solid var(--sand);
+  }
+  .result-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+  .result-divider-line { flex: 1; height: 1px; background: var(--sand); }
+  .result-divider-text {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--dust);
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .result-size {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 96px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    animation: sizeReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes sizeReveal {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .result-confidence {
+    font-size: 13px;
+    color: var(--gold);
+    font-weight: 500;
+  }
+  .result-explanation {
+    font-size: 13px;
+    color: var(--stone);
+    line-height: 1.6;
+    max-width: 280px;
+  }
+  .result-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--dust);
+    text-transform: uppercase;
+  }
+  .result-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .btn-secondary {
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--dust);
+    cursor: pointer;
+    padding: 8px;
+    transition: color 0.2s;
+  }
+  .btn-secondary:hover { color: var(--stone); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <button class="btn-ghost" id="headerBack" style="display:none" onclick="goBack()">Back</button>
+      <button class="btn-ghost" id="headerRestart" style="display:none" onclick="restart()">Restart</button>
+    </div>
+    <div class="brand" id="headerBrand">deBritivo</div>
+    <div class="header-right">
+      <span id="headerStep" style="font-size:12px;color:var(--dust);font-weight:500;"></span>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar" id="progressBar" style="display:none">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+
+  <!-- Dynamic screen content -->
+  <div id="screenContainer" class="screen"></div>
+</div>
+
+<script>
+// ── Parse URL params ──────────────────────────────────────────────────────────
+const params = new URLSearchParams(window.location.search);
+const PRODUCT_NAME = params.get('product') || 'this product';
+
+function parseChartParam(key) {
+  const raw = params.get(key);
+  if (!raw) return null;
+  const chart = {};
+  raw.split(',').forEach(pair => {
+    const [size, val] = pair.split(':');
+    if (size && val) chart[size.trim().toUpperCase()] = parseFloat(val.trim());
+  });
+  return chart;
+}
+
+const CHART = {
+  chest:    parseChartParam('chest'),
+  length:   parseChartParam('length'),
+  shoulder: parseChartParam('shoulder'),
+  waist:    parseChartParam('waist'),
+  hip:      parseChartParam('hip'),
+};
+
+// Remove null keys
+Object.keys(CHART).forEach(k => { if (!CHART[k]) delete CHART[k]; });
+
+const CHART_SUMMARY = Object.entries(CHART).map(([key, vals]) =>
+  `${key.charAt(0).toUpperCase() + key.slice(1)}: ` +
+  Object.entries(vals).map(([s,v]) => `${s}=${v}cm`).join(', ')
+).join('\n');
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const state = {
+  step: 0,
+  heightCm: 175,
+  heightUnit: 'cm',
+  weightKg: 75,
+  weightUnit: 'kg',
+  age: 28,
+  chest: null,
+  shoulder: null,
+  stomach: null,
+  result: null,
+};
+
+// Steps: 0=height, 1=weight, 2=age, 3=chest, 4=shoulder, 5=stomach, 6=loading, 7=result
+const TOTAL_QUIZ_STEPS = 5; // excludes loading+result
+
+// ── Drum data ─────────────────────────────────────────────────────────────────
+const CM_VALUES   = Array.from({length: 121}, (_,i) => 140 + i);
+const FEET_VALUES = ["4'7\"","4'8\"","4'9\"","4'10\"","4'11\"","5'0\"","5'1\"","5'2\"","5'3\"","5'4\"","5'5\"","5'6\"","5'7\"","5'8\"","5'9\"","5'10\"","5'11\"","6'0\"","6'1\"","6'2\"","6'3\"","6'4\"","6'5\"","6'6\""];
+const KG_VALUES   = Array.from({length: 161}, (_,i) => 40 + i * 0.5);
+const LBS_VALUES  = Array.from({length: 161}, (_,i) => Math.round(88 + i * 1.1));
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function goNext() { state.step++; render(); }
+function goBack() { if (state.step > 0) { state.step--; render(); } }
+function restart() { Object.assign(state, { step:0, chest:null, shoulder:null, stomach:null, result:null }); render(); }
+
+// ── Header update ─────────────────────────────────────────────────────────────
+function updateHeader() {
+  const s = state.step;
+  document.getElementById('headerBack').style.display    = (s > 0 && s < 6) ? 'block' : 'none';
+  document.getElementById('headerRestart').style.display = (s === 7) ? 'block' : 'none';
+  document.getElementById('headerBrand').textContent     = (s === 7) ? PRODUCT_NAME : 'deBritivo';
+  document.getElementById('progressBar').style.display   = (s >= 0 && s <= 4) ? 'block' : 'none';
+
+  if (s >= 0 && s <= 4) {
+    const pct = Math.round(((s) / TOTAL_QUIZ_STEPS) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('headerStep').textContent = (s + 1) + '/' + TOTAL_QUIZ_STEPS;
+  } else {
+    document.getElementById('headerStep').textContent = '';
+  }
+}
+
+// ── Drum Picker builder ───────────────────────────────────────────────────────
+function buildDrum({ values, selected, onChange, unit, altUnit, onUnitSwitch }) {
+  const wrap = document.createElement('div');
+  wrap.className = 'drum-wrap';
+
+  const container = document.createElement('div');
+  container.className = 'drum-container';
+
+  const fadeTop = document.createElement('div');
+  fadeTop.className = 'drum-fade-top';
+  const fadeBot = document.createElement('div');
+  fadeBot.className = 'drum-fade-bottom';
+  const indicator = document.createElement('div');
+  indicator.className = 'drum-indicator';
+
+  const scroll = document.createElement('div');
+  scroll.className = 'drum-scroll';
+
+  const ITEM_H = 44;
+
+  values.forEach((v, i) => {
+    const item = document.createElement('div');
+    item.className = 'drum-item';
+    item.dataset.val = v;
+    item.dataset.idx = i;
+    item.textContent = v;
+    item.addEventListener('click', () => {
+      scroll.scrollTo({ top: i * ITEM_H, behavior: 'smooth' });
+      onChange(v);
+    });
+    scroll.appendChild(item);
+  });
+
+  // Snap on scroll end
+  let scrollTimer;
+  scroll.addEventListener('scroll', () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      const idx = Math.round(scroll.scrollTop / ITEM_H);
+      const clamped = Math.max(0, Math.min(idx, values.length - 1));
+      onChange(values[clamped]);
+      highlightActive(scroll, clamped, values);
+    }, 80);
+  });
+
+  container.appendChild(fadeTop);
+  container.appendChild(indicator);
+  container.appendChild(scroll);
+  container.appendChild(fadeBot);
+  wrap.appendChild(container);
+
+  // Unit switcher
+  const unitArea = document.createElement('div');
+  unitArea.className = 'drum-unit-area';
+  if (altUnit) {
+    const altBtn = document.createElement('button');
+    altBtn.className = 'unit-option';
+    altBtn.textContent = altUnit;
+    altBtn.onclick = onUnitSwitch;
+    unitArea.appendChild(altBtn);
+  }
+  const mainUnit = document.createElement('span');
+  mainUnit.className = 'unit-option active';
+  mainUnit.textContent = unit;
+  unitArea.appendChild(mainUnit);
+  wrap.appendChild(unitArea);
+
+  // Scroll to selected after paint
+  requestAnimationFrame(() => {
+    const idx = values.indexOf(selected);
+    if (idx >= 0) {
+      scroll.scrollTop = idx * ITEM_H;
+      highlightActive(scroll, idx, values);
+    }
+  });
+
+  return wrap;
+}
+
+function highlightActive(scroll, activeIdx, values) {
+  scroll.querySelectorAll('.drum-item').forEach((el, i) => {
+    el.className = 'drum-item' +
+      (i === activeIdx ? ' active' : Math.abs(i - activeIdx) === 1 ? ' near' : '');
+  });
+}
+
+// ── Choice Card builder ───────────────────────────────────────────────────────
+function buildChoiceCard({ svgStr, label, selected, onSelect }) {
+  const card = document.createElement('button');
+  card.className = 'choice-card' + (selected ? ' selected' : '');
+
+  const icon = document.createElement('div');
+  icon.className = 'choice-icon';
+  icon.innerHTML = svgStr;
+
+  const lbl = document.createElement('span');
+  lbl.className = 'choice-label';
+  lbl.textContent = label;
+
+  const arrow = document.createElement('span');
+  arrow.className = 'choice-arrow';
+  arrow.textContent = '›';
+
+  card.appendChild(icon);
+  card.appendChild(lbl);
+  card.appendChild(arrow);
+
+  card.addEventListener('click', () => {
+    onSelect();
+    setTimeout(goNext, 250);
+  });
+
+  return card;
+}
+
+// ── SVGs ──────────────────────────────────────────────────────────────────────
+const SVG = {
+  chest_narrower: `<svg viewBox="0 0 80 80" fill="none"><path d="M33 22C29 24 25 30 24 38L23 58H57L56 38C55 30 51 24 47 22C43 19 37 19 33 22Z" stroke="#c4b8b0" stroke-width="1.5" fill="#f7f3ef" stroke-dasharray="3 2"/><path d="M33 22C35 27 35 31 40 31C45 31 45 27 47 22" stroke="#8b7355" stroke-width="1.5" fill="none"/><ellipse cx="40" cy="17" rx="5" ry="5" fill="#e8ddd6" stroke="#c4b8b0" stroke-width="1"/></svg>`,
+  chest_average:  `<svg viewBox="0 0 80 80" fill="none"><path d="M30 22C25 24 20 30 19 38L18 58H62L61 38C60 30 55 24 50 22C45 19 35 19 30 22Z" stroke="#c4b8b0" stroke-width="1.5" fill="#f7f3ef" stroke-dasharray="3 2"/><path d="M30 22C33 27 33 31 40 31C47 31 47 27 50 22" stroke="#8b7355" stroke-width="1.5" fill="none"/><ellipse cx="40" cy="17" rx="5" ry="5" fill="#e8ddd6" stroke="#c4b8b0" stroke-width="1"/></svg>`,
+  chest_broader:  `<svg viewBox="0 0 80 80" fill="none"><path d="M26 22C20 24 14 30 13 38L12 58H68L67 38C66 30 60 24 54 22C48 19 32 19 26 22Z" stroke="#c4b8b0" stroke-width="1.5" fill="#f7f3ef" stroke-dasharray="3 2"/><path d="M26 22C30 27 30 31 40 31C50 31 50 27 54 22" stroke="#8b7355" stroke-width="1.5" fill="none"/><ellipse cx="40" cy="17" rx="5" ry="5" fill="#e8ddd6" stroke="#c4b8b0" stroke-width="1"/></svg>`,
+
+  shoulder_narrower: `<svg viewBox="0 0 80 80" fill="none"><line x1="40" y1="10" x2="40" y2="70" stroke="#e8ddd6" stroke-width="1"/><path d="M40 20C38 20 34 21 32 24L28 35L28 55L52 55L52 35L48 24C46 21 42 20 40 20Z" stroke="#c4b8b0" stroke-width="1.5" fill="#f7f3ef" stroke-dasharray="3 2"/><path d="M32 24C36 22 44 22 48 24" stroke="#8b7355" stroke-width="1.5" fill="none"/></svg>`,
+  shoulder_average:  `<svg viewBox="0 0 80 80" fill="none"><line x1="40" y1="10" x2="40" y2="70" stroke="#e8ddd6" stroke-width="1"/><path d="M40 20C37 20 31 22 28 26L24 37L24 57L56 57L56 37L52 26C49 22 43 20 40 20Z" stroke="#c4b8b0" stroke-width="1.5" fill="#f7f3ef" stroke-dasharray="3 2"/><path d="M28 26C33 22 47 22 52 26" stroke="#8b7355" stroke-width="1.5" fill="none"/></svg>`,
+  shoulder_broader:  `<svg viewBox="0 0 80 80" fill="none"><line x1="40" y1="10" x2="40" y2="70" stroke="#e8ddd6" stroke-width="1"/><path d="M40 20C36 20 27 23 23 28L18 40L18 60L62 60L62 40L57 28C53 23 44 20 40 20Z" stroke="#c4b8b0" stroke-width="1.5" fill="#f7f3ef" stroke-dasharray="3 2"/><path d="M23 28C31 22 49 22 57 28" stroke="#8b7355" stroke-width="1.5" fill="none"/></svg>`,
+
+  stomach_flatter: `<svg viewBox="0 0 80 80" fill="none"><line x1="40" y1="10" x2="40" y2="70" stroke="#e8ddd6" stroke-width="1"/><path d="M40 18L40 62C34 60 30 54 29 46L29 34C30 26 34 20 40 18Z" stroke="#c4b8b0" stroke-width="1.5" fill="#f7f3ef" stroke-dasharray="3 2"/><path d="M40 18L44 20L44 60L40 62" stroke="#8b7355" stroke-width="1" fill="none"/></svg>`,
+  stomach_average: `<svg viewBox="0 0 80 80" fill="none"><line x1="40" y1="10" x2="40" y2="70" stroke="#e8ddd6" stroke-width="1"/><path d="M40 18L40 62C34 60 26 54 24 46L24 34C26 26 34 20 40 18Z" stroke="#c4b8b0" stroke-width="1.5" fill="#f7f3ef" stroke-dasharray="3 2"/><path d="M40 18L44 20L44 60L40 62" stroke="#8b7355" stroke-width="1" fill="none"/></svg>`,
+  stomach_rounder: `<svg viewBox="0 0 80 80" fill="none"><line x1="40" y1="10" x2="40" y2="70" stroke="#e8ddd6" stroke-width="1"/><path d="M40 18L40 62C34 60 20 54 17 44L17 36C20 26 34 20 40 18Z" stroke="#c4b8b0" stroke-width="1.5" fill="#f7f3ef" stroke-dasharray="3 2"/><path d="M40 18L44 20L44 60L40 62" stroke="#8b7355" stroke-width="1" fill="none"/></svg>`,
+};
+
+// ── Screen renderers ──────────────────────────────────────────────────────────
+function renderHeight() {
+  const frag = document.createDocumentFragment();
+
+  const titleArea = document.createElement('div');
+  titleArea.className = 'screen-title-area';
+  titleArea.innerHTML = `<div class="screen-title">What is your height?</div>`;
+  frag.appendChild(titleArea);
+
+  const body = document.createElement('div');
+  body.className = 'screen-body';
+
+  const values = state.heightUnit === 'cm' ? CM_VALUES : FEET_VALUES;
+  const selected = state.heightUnit === 'cm' ? state.heightCm : FEET_VALUES[Math.min(Math.round((state.heightCm - 140) / 2.5), FEET_VALUES.length-1)];
+
+  const drum = buildDrum({
+    values, selected,
+    onChange: (v) => {
+      if (state.heightUnit === 'cm') state.heightCm = v;
+    },
+    unit: state.heightUnit,
+    altUnit: state.heightUnit === 'cm' ? 'feet' : 'cm',
+    onUnitSwitch: () => {
+      state.heightUnit = state.heightUnit === 'cm' ? 'feet' : 'cm';
+      render();
+    }
+  });
+  body.appendChild(drum);
+  frag.appendChild(body);
+
+  const footer = document.createElement('div');
+  footer.className = 'screen-footer';
+  const btn = document.createElement('button');
+  btn.className = 'btn-primary';
+  btn.textContent = 'Next';
+  btn.onclick = goNext;
+  footer.appendChild(btn);
+  frag.appendChild(footer);
+
+  return frag;
+}
+
+function renderWeight() {
+  const frag = document.createDocumentFragment();
+
+  const titleArea = document.createElement('div');
+  titleArea.className = 'screen-title-area';
+  titleArea.innerHTML = `<div class="screen-title">What is your weight?</div>`;
+  frag.appendChild(titleArea);
+
+  const body = document.createElement('div');
+  body.className = 'screen-body';
+
+  const values = state.weightUnit === 'kg' ? KG_VALUES : LBS_VALUES;
+  const selected = state.weightUnit === 'kg' ? state.weightKg : Math.round(state.weightKg * 2.205);
+
+  const drum = buildDrum({
+    values, selected,
+    onChange: (v) => {
+      if (state.weightUnit === 'kg') state.weightKg = v;
+      else state.weightKg = Math.round((v / 2.205) * 2) / 2;
+    },
+    unit: state.weightUnit,
+    altUnit: state.weightUnit === 'kg' ? 'lbs' : 'kg',
+    onUnitSwitch: () => {
+      state.weightUnit = state.weightUnit === 'kg' ? 'lbs' : 'kg';
+      render();
+    }
+  });
+  body.appendChild(drum);
+  frag.appendChild(body);
+
+  const footer = document.createElement('div');
+  footer.className = 'screen-footer';
+  const btn = document.createElement('button');
+  btn.className = 'btn-primary';
+  btn.textContent = 'Next';
+  btn.onclick = goNext;
+  footer.appendChild(btn);
+  frag.appendChild(footer);
+
+  return frag;
+}
+
+function renderAge() {
+  const frag = document.createDocumentFragment();
+
+  const titleArea = document.createElement('div');
+  titleArea.className = 'screen-title-area';
+  titleArea.innerHTML = `<div class="screen-title">What is your age?</div>`;
+  frag.appendChild(titleArea);
+
+  const body = document.createElement('div');
+  body.className = 'screen-body';
+
+  const AGE_VALUES = Array.from({length: 83}, (_,i) => 18 + i);
+  const drum = buildDrum({
+    values: AGE_VALUES,
+    selected: state.age,
+    onChange: (v) => { state.age = v; },
+    unit: 'years',
+    altUnit: null,
+    onUnitSwitch: null
+  });
+  body.appendChild(drum);
+  frag.appendChild(body);
+
+  const footer = document.createElement('div');
+  footer.className = 'screen-footer';
+  const btn = document.createElement('button');
+  btn.className = 'btn-primary';
+  btn.textContent = 'Next';
+  btn.onclick = goNext;
+  footer.appendChild(btn);
+  frag.appendChild(footer);
+
+  return frag;
+}
+
+function renderChest() {
+  const frag = document.createDocumentFragment();
+  const titleArea = document.createElement('div');
+  titleArea.className = 'screen-title-area';
+  titleArea.innerHTML = `<div class="screen-title">Which chest looks like yours?</div>`;
+  frag.appendChild(titleArea);
+
+  const body = document.createElement('div');
+  body.className = 'screen-body';
+  const list = document.createElement('div');
+  list.className = 'choice-list';
+
+  [
+    { key: 'narrower', label: 'Narrower', svg: SVG.chest_narrower },
+    { key: 'average',  label: 'Average',  svg: SVG.chest_average  },
+    { key: 'broader',  label: 'Broader',  svg: SVG.chest_broader  },
+  ].forEach(o => {
+    list.appendChild(buildChoiceCard({
+      svgStr: o.svg, label: o.label,
+      selected: state.chest === o.key,
+      onSelect: () => { state.chest = o.key; }
+    }));
+  });
+
+  body.appendChild(list);
+  frag.appendChild(body);
+  return frag;
+}
+
+function renderShoulder() {
+  const frag = document.createDocumentFragment();
+  const titleArea = document.createElement('div');
+  titleArea.className = 'screen-title-area';
+  titleArea.innerHTML = `<div class="screen-title">Which shoulders look like yours?</div>`;
+  frag.appendChild(titleArea);
+
+  const body = document.createElement('div');
+  body.className = 'screen-body';
+  const list = document.createElement('div');
+  list.className = 'choice-list';
+
+  [
+    { key: 'narrower', label: 'Narrower', svg: SVG.shoulder_narrower },
+    { key: 'average',  label: 'Average',  svg: SVG.shoulder_average  },
+    { key: 'broader',  label: 'Broader',  svg: SVG.shoulder_broader  },
+  ].forEach(o => {
+    list.appendChild(buildChoiceCard({
+      svgStr: o.svg, label: o.label,
+      selected: state.shoulder === o.key,
+      onSelect: () => { state.shoulder = o.key; }
+    }));
+  });
+
+  body.appendChild(list);
+  frag.appendChild(body);
+  return frag;
+}
+
+function renderStomach() {
+  const frag = document.createDocumentFragment();
+  const titleArea = document.createElement('div');
+  titleArea.className = 'screen-title-area';
+  titleArea.innerHTML = `<div class="screen-title">Which stomach looks like yours?</div>`;
+  frag.appendChild(titleArea);
+
+  const body = document.createElement('div');
+  body.className = 'screen-body';
+  const list = document.createElement('div');
+  list.className = 'choice-list';
+
+  [
+    { key: 'flatter', label: 'Flatter', svg: SVG.stomach_flatter },
+    { key: 'average', label: 'Average', svg: SVG.stomach_average },
+    { key: 'rounder', label: 'Rounder', svg: SVG.stomach_rounder },
+  ].forEach(o => {
+    list.appendChild(buildChoiceCard({
+      svgStr: o.svg, label: o.label,
+      selected: state.stomach === o.key,
+      onSelect: () => { state.stomach = o.key; }
+    }));
+  });
+
+  body.appendChild(list);
+  frag.appendChild(body);
+  return frag;
+}
+
+function renderLoading() {
+  const el = document.createElement('div');
+  el.className = 'loading-screen';
+
+  const msgs = [
+    ['📐', 'Analysing your <strong>measurements</strong>'],
+    ['👕', `Matching to <strong>${PRODUCT_NAME}</strong> size chart`],
+    ['✨', 'Calculating your <strong>perfect fit</strong>'],
+  ];
+  let msgIdx = 0;
+
+  const icon = document.createElement('div');
+  icon.className = 'loading-icon';
+  icon.textContent = msgs[0][0];
+
+  const card = document.createElement('div');
+  card.className = 'loading-card';
+  const text = document.createElement('p');
+  text.className = 'loading-text';
+  text.innerHTML = msgs[0][1];
+  const barBg = document.createElement('div');
+  barBg.className = 'loading-bar-bg';
+  const barFill = document.createElement('div');
+  barFill.className = 'loading-bar-fill';
+  barFill.style.width = '0%';
+  barBg.appendChild(barFill);
+  card.appendChild(text);
+  card.appendChild(barBg);
+
+  const powered = document.createElement('p');
+  powered.className = 'loading-powered';
+  powered.textContent = 'Powered by deBritivo AI';
+
+  el.appendChild(icon);
+  el.appendChild(card);
+  el.appendChild(powered);
+
+  // Animate progress
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress = Math.min(progress + 1.5, 95);
+    barFill.style.width = progress + '%';
+    msgIdx = progress < 33 ? 0 : progress < 66 ? 1 : 2;
+    icon.textContent = msgs[msgIdx][0];
+    text.innerHTML = msgs[msgIdx][1];
+  }, 80);
+
+  // Call Claude
+  callClaude().then(result => {
+    clearInterval(interval);
+    barFill.style.width = '100%';
+    state.result = result;
+    setTimeout(goNext, 400);
+  });
+
+  return el;
+}
+
+function renderResult() {
+  const el = document.createElement('div');
+  el.className = 'result-screen';
+
+  const top = document.createElement('div');
+  top.className = 'result-top';
+
+  const productImg = document.createElement('div');
+  productImg.className = 'result-product';
+  productImg.textContent = '👕';
+
+  const divider = document.createElement('div');
+  divider.className = 'result-divider';
+  divider.innerHTML = `<div class="result-divider-line"></div><span class="result-divider-text">Size Recommendation</span><div class="result-divider-line"></div>`;
+
+  const sizeEl = document.createElement('div');
+  sizeEl.className = 'result-size';
+  sizeEl.textContent = state.result?.size || 'M';
+
+  const conf = document.createElement('p');
+  conf.className = 'result-confidence';
+  conf.textContent = state.result?.confidence || '';
+
+  const expl = document.createElement('p');
+  expl.className = 'result-explanation';
+  expl.textContent = state.result?.explanation || '';
+
+  const brand = document.createElement('div');
+  brand.className = 'result-brand';
+  brand.textContent = 'deBritivo';
+
+  top.appendChild(productImg);
+  top.appendChild(divider);
+  top.appendChild(sizeEl);
+  top.appendChild(conf);
+  top.appendChild(expl);
+  top.appendChild(brand);
+
+  const actions = document.createElement('div');
+  actions.className = 'result-actions';
+  const continueBtn = document.createElement('button');
+  continueBtn.className = 'btn-primary';
+  continueBtn.textContent = 'Continue →';
+  continueBtn.onclick = () => {
+    // Close iframe / notify parent if embedded
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: 'size-selected', size: state.result?.size }, '*');
+    }
+  };
+  const restartBtn = document.createElement('button');
+  restartBtn.className = 'btn-secondary';
+  restartBtn.textContent = 'Start over';
+  restartBtn.onclick = restart;
+  actions.appendChild(continueBtn);
+  actions.appendChild(restartBtn);
+
+  el.appendChild(top);
+  el.appendChild(actions);
+  return el;
+}
+
+// ── Claude API call ───────────────────────────────────────────────────────────
+async function callClaude() {
+  const chartText = CHART_SUMMARY || 'No size chart provided — use general sizing logic for menswear.';
+
+  const prompt = `You are a menswear fit expert for deBritivo, a clothing brand.
+
+A male customer has completed a body profile quiz. Based on their measurements and the product's size chart, recommend their ideal size.
+
+PRODUCT: ${PRODUCT_NAME}
+
+SIZE CHART (measurements in cm):
+${chartText}
+
+CUSTOMER PROFILE:
+- Height: ${state.heightCm}cm
+- Weight: ${state.weightKg}kg
+- Age: ${state.age} years
+- Chest build: ${state.chest}
+- Shoulder build: ${state.shoulder}
+- Stomach build: ${state.stomach}
+
+RULES:
+- Only recommend from: S, M, L, XL, 2XL
+- If between sizes, consider their body shape to decide up or down
+- Broader chest/shoulders = size up; flatter stomach = can size down
+- Keep explanation to one short sentence (max 12 words)
+- Keep confidence line short and reassuring (max 8 words)
+
+Respond ONLY with valid JSON, no markdown:
+{"size":"M","confidence":"Most people like you choose this size","explanation":"Your chest and shoulder build suits the M cut perfectly."}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 150,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content?.[0]?.text || '{}').replace(/```json|```/g,'').trim();
+    return JSON.parse(text);
+  } catch(e) {
+    return {
+      size: 'M',
+      confidence: 'Recommended for your build',
+      explanation: 'Based on your measurements, M should fit you well.'
+    };
+  }
+}
+
+// ── Master render ─────────────────────────────────────────────────────────────
+function render() {
+  updateHeader();
+  const container = document.getElementById('screenContainer');
+  container.innerHTML = '';
+
+  const screens = [
+    renderHeight,
+    renderWeight,
+    renderAge,
+    renderChest,
+    renderShoulder,
+    renderStomach,
+    renderLoading,
+    renderResult,
+  ];
+
+  const screen = document.createElement('div');
+  screen.className = 'screen';
+  const content = screens[state.step]?.();
+  if (content) screen.appendChild(content);
+  container.appendChild(screen);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
